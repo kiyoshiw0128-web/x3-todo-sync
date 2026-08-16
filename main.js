@@ -61,7 +61,7 @@ class X3TodoSyncPlugin extends Plugin {
       const markdown = await this.app.vault.read(file);
       const tasks = this.extractTasks(markdown);
       const body = ["# X3 ToDo", `updated: ${new Date().toISOString()}`, ...tasks.map((task) => `- ${task}`)].join("\n") + "\n";
-      await requestUrl({
+      const response = await requestUrl({
         url: `https://api.github.com/gists/${this.settings.gistId}`,
         method: "PATCH",
         headers: {
@@ -71,11 +71,17 @@ class X3TodoSyncPlugin extends Plugin {
         },
         contentType: "application/json",
         body: JSON.stringify({ files: { "x3-todo.txt": { content: body } } }),
+        throw: false,
       });
+      if (response.status !== 200) {
+        const detail = response.json?.message || `HTTP ${response.status}`;
+        throw new Error(`HTTP ${response.status}: ${detail}`);
+      }
       if (showNotice) new Notice(`X3へToDo ${tasks.length}件を同期しました`);
     } catch (error) {
       console.error("X3 ToDo sync failed", error);
-      new Notice("X3 ToDoの同期に失敗しました。トークンと通信を確認してください");
+      const reason = error instanceof Error ? error.message : String(error);
+      new Notice(`X3 ToDo同期失敗: ${reason}`);
     }
   }
 }
