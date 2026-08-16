@@ -1,9 +1,9 @@
 {
   "id": "x3-todo-sync",
   "name": "X3 ToDo Sync",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "minAppVersion": "1.5.0",
-  "description": "X3待受.md の未完了ToDoだけをXteink X3向けGistへ同期します。",
+  "description": "Obsidianノートの未完了ToDoをXteink X3向けGistへ同期します。",
   "author": "kiyoshiw0128-web",
   "isDesktopOnly": false
 }

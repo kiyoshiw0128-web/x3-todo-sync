@@ -4,12 +4,19 @@ const DEFAULTS = {
   token: "",
   gistId: "",
   sourcePath: "01_ToDo/X3待受.md",
-  maxTasks: 10,
+  maxTasks: 30,
+  settingsVersion: 2,
 };
 
 class X3TodoSyncPlugin extends Plugin {
   async onload() {
-    this.settings = Object.assign({}, DEFAULTS, await this.loadData());
+    const saved = await this.loadData();
+    this.settings = Object.assign({}, DEFAULTS, saved);
+    if (!saved || saved.settingsVersion !== DEFAULTS.settingsVersion) {
+      this.settings.maxTasks = DEFAULTS.maxTasks;
+      this.settings.settingsVersion = DEFAULTS.settingsVersion;
+      await this.saveSettings();
+    }
     this.addSettingTab(new X3TodoSettingTab(this.app, this));
     this.addCommand({
       id: "sync-now",
@@ -128,6 +135,18 @@ class X3TodoSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.sourcePath)
         .onChange(async (value) => {
           this.plugin.settings.sourcePath = value.trim();
+          await this.plugin.saveSettings();
+        }));
+
+    new Setting(containerEl)
+      .setName("最大表示件数")
+      .setDesc("X3では1ページ6件で、上下ボタンからページを切り替えます")
+      .addSlider((slider) => slider
+        .setLimits(1, 30, 1)
+        .setValue(this.plugin.settings.maxTasks)
+        .setDynamicTooltip()
+        .onChange(async (value) => {
+          this.plugin.settings.maxTasks = value;
           await this.plugin.saveSettings();
         }));
 
