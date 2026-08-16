@@ -41,14 +41,16 @@ class X3TodoSyncPlugin extends Plugin {
   extractTasks(markdown) {
     const tasks = [];
     for (const line of markdown.split(/\r?\n/)) {
-      const match = line.match(/^\s*[-*]\s+\[ \]\s+(.+?)\s*$/i);
+      const match = line.match(/^(\s*)[-*]\s+\[ \]\s+(.+?)\s*$/i);
       if (!match) continue;
-      const cleaned = match[1]
+      const cleaned = match[2]
         .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
         .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, target, label) => label || target)
         .replace(/[*_`~]/g, "")
         .trim();
-      if (cleaned) tasks.push(cleaned.slice(0, 160));
+      const indentWidth = match[1].replace(/\t/g, "    ").length;
+      const level = Math.min(3, Math.floor(indentWidth / 4));
+      if (cleaned) tasks.push({ text: cleaned.slice(0, 160), level });
       if (tasks.length >= this.settings.maxTasks) break;
     }
     return tasks;
@@ -67,7 +69,11 @@ class X3TodoSyncPlugin extends Plugin {
     try {
       const markdown = await this.app.vault.read(file);
       const tasks = this.extractTasks(markdown);
-      const body = ["# X3 ToDo", `updated: ${new Date().toISOString()}`, ...tasks.map((task) => `- ${task}`)].join("\n") + "\n";
+      const body = [
+        "# X3 ToDo",
+        `updated: ${new Date().toISOString()}`,
+        ...tasks.map((task) => `${"  ".repeat(task.level)}- ${task.text}`),
+      ].join("\n") + "\n";
       const response = await requestUrl({
         url: `https://api.github.com/gists/${this.settings.gistId}`,
         method: "PATCH",
